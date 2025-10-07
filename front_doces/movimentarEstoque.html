@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Movimentação de Estoque</title>
+</head>
+<body>
+    <h1>Movimentação de Estoque</h1>
+    <a href="principal.html"><button>Inicio</button></a>
+
+    <table id="tabelaLivros" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Titulo</th>
+                <th>Quantidade Atual</th>
+                <th>Tipo Movimentação</th>
+                <th>Quantidade</th>
+                <th>Data</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+    async function buscarDadosTabela() {
+        try {
+            const resposta = await fetch('http://localhost/api_livros/livro');
+
+            if (!resposta.ok) {
+            const erroData = await resposta.json();
+            throw new Error(erroData.message || `Erro HTTP: ${resposta.status}`);
+            }
+
+            const dados = await resposta.json();
+            return dados;
+
+        } catch (erro) {
+            throw erro;
+        }
+    }
+
+    function preencherTabela(dados) {
+      console.log(dados);
+      const tabelaCorpo = document.querySelector('#tabelaLivros tbody');
+      tabelaCorpo.innerHTML = ""; // limpa tabela antes de preencher
+
+      // caso nao encontrar nenhum livro
+      if (!dados || dados.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.textContent = "Nenhum livro encontrado.";
+        tr.appendChild(td);
+        tabelaCorpo.appendChild(tr);
+        return;
+      }
+
+      dados.forEach(livro => {
+        const tr = document.createElement('tr');
+
+        // ID
+        const tdId = document.createElement('td');
+        tdId.textContent = livro.id_livro;
+        tr.appendChild(tdId);
+
+        // TITULO
+        const tdTitulo = document.createElement('td');
+        tdTitulo.textContent = livro.titulo;
+        tr.appendChild(tdTitulo);
+
+        // Quantidade Atual
+        const tdQtAtual = document.createElement('td');
+        tdQtAtual.textContent = livro.quantidade_atual;
+        tr.appendChild(tdQtAtual);
+
+        // TIPO MOVIMENTAÇÃO
+        const tdTipo = document.createElement('td');
+        const selectTipo = document.createElement('select');
+        selectTipo.name = 'tipoMovimentacao';
+        const optionEntrada = document.createElement('option');
+        optionEntrada.value = "entrada";
+        optionEntrada.textContent = "Entrada";
+        const optionSaida = document.createElement('option');
+        optionSaida.value = "saida";
+        optionSaida.textContent = "Saída";
+
+        selectTipo.appendChild(optionEntrada);
+        selectTipo.appendChild(optionSaida);
+        tdTipo.appendChild(selectTipo);
+        tr.appendChild(tdTipo);
+
+        // QUANTIDADE
+        const tdQuantidade = document.createElement('td');
+        const inputQuantidade = document.createElement('input');
+        inputQuantidade.type = 'number';
+        inputQuantidade.name = 'quantidade';
+        inputQuantidade.min = 1;
+        inputQuantidade.placeholder = 'Quantidade';
+        tdQuantidade.appendChild(inputQuantidade);
+        tr.appendChild(tdQuantidade);
+
+        // DATA
+        const tdData = document.createElement('td');
+        const inputData = document.createElement('input');
+        inputData.type = 'date';
+        inputData.name = 'dataMovimentacao';
+        tdData.appendChild(inputData);
+        tr.appendChild(tdData);
+
+        // AÇÃO (botão)
+        const tdAcao = document.createElement('td');
+        const btnRegistrar = document.createElement('button');
+        btnRegistrar.type = 'button';
+        btnRegistrar.textContent = 'Registrar';
+        btnRegistrar.classList.add('btnMovimentar');
+
+        btnRegistrar.addEventListener('click', () => movimentarEstoque(livro.id_livro, livro.quantidade_atual, selectTipo.value, inputQuantidade.value, inputData.value));
+
+        tdAcao.appendChild(btnRegistrar);
+        tr.appendChild(tdAcao);
+
+        tabelaCorpo.appendChild(tr);
+      });
+    }
+
+    async function movimentarEstoque(id_livro, quantidade_atual, tipoMovimentacao, quantidade, data){
+        if(!id_livro || !tipoMovimentacao || !quantidade || !data){
+            alert("Todos os campos precisam estar preenchidos");
+            return
+        }
+        quantidade = Number(quantidade);
+        if(tipoMovimentacao == "saida" && !validacaoQuantidade(quantidade, quantidade_atual)){
+            return
+        }
+        
+        const usuario = JSON.parse(sessionStorage.getItem('usuario'));
+        console.log(usuario);
+        //converte para numero
+        movimentacao = {
+            id_livro:id_livro,
+            id_usuario:usuario.id_usuario,
+            quantidade_atual: quantidade_atual,
+            tipo:tipoMovimentacao,
+            quantidade:quantidade,
+            data:data
+        };
+        
+        result = await postMovimentacao(movimentacao);
+        alert(result.message);
+        location.reload();
+    }
+
+    function validacaoQuantidade(quantidade, quantidade_atual){
+        if(quantidade > quantidade_atual){
+            alert("Saldo ficará negativo, não foi possivel atualizar");
+            return false;
+        }
+        return true;
+    }
+
+    async function postMovimentacao(movimentacao) {
+        console.log(movimentacao);
+      try {
+        const resposta = await fetch('http://localhost/api_livros/estoque', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(movimentacao)
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          console.log(resposta);
+          throw new Error(`HTTP: ${resposta.status} - ${dados.message}`);
+        }
+
+        return dados;
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    // Associa o evento ao botão após o DOM carregar
+    document.addEventListener("DOMContentLoaded", async () => {
+        const dados = await buscarDadosTabela(); // espera a Promise resolver
+        preencherTabela(dados);
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Livros</title>
+</head>
+<body>
+    <div>
+        <div>
+            <h1 style="text-align: center;">Livros</h1>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin: 0px auto; max-width: 90%;">
+            <div>
+                <input type="text" placeholder="Titulo" id="filtroTitulo">
+                <button id="filtrar"">Filtrar</button>
+                <p id="mensagem"></p>
+            </div>
+            <div>
+              <a href="principal.html"><button>Inicio</button></a>
+              <a href="cadastro.html"><button>Cadastrar</button></a>
+            </div>
+        </div>
+        
+
+        <div>
+            <table id="tabela" border="1">
+              <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Titulo</th>
+                    <th>Descricao</th>
+                    <th>Autor</th>
+                    <th>Estoque</th>
+                    <th>Editar</th>
+                    <th>Excluir</th>
+                  </tr>
+              </thead>
+              <tbody>
+
+              </tbody>
+            </table>
+        </div>
+    </div>
+  <script>
+    // Função que faz a requisição à API
+    async function buscarDadosTabela() {
+      try {
+        const resposta = await fetch('http://localhost/api_livros/livro');
+
+        if (!resposta.ok) {
+          const erroData = await resposta.json();
+          throw new Error(erroData.message || `Erro HTTP: ${resposta.status}`);
+        }
+
+        const dados = await resposta.json();
+        return dados;
+
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    // Função que preenche a tabela com os dados dos livro
+    function preencherTabela(dados) {
+      console.log(dados);
+      const tabelaCorpo = document.querySelector('#tabela tbody');
+      tabelaCorpo.innerHTML = ""; // limpa tabela antes de preencher
+
+      // caso nao encontrar nenhum produto
+      if (!dados || dados.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 9;
+        td.textContent = "Nenhum Produto encontrado.";
+        tr.appendChild(td);
+        tabelaCorpo.appendChild(tr);
+        return;
+      }
+
+      dados.forEach(livro => {
+        const tr = document.createElement('tr');
+
+        // ID
+        const tdId = document.createElement('td');
+        tdId.textContent = livro.id_livro;
+        tr.appendChild(tdId);
+
+        // Titulo
+        const tdTitulo = document.createElement('td');
+        tdTitulo.textContent = livro.titulo;
+        tr.appendChild(tdTitulo);
+
+        // Descrição
+        const tdDesricacao = document.createElement('td');
+        tdDesricacao.textContent = livro.descricao;
+        tr.appendChild(tdDesricacao);
+
+        // Autor
+        const tdAutor = document.createElement('td');
+        tdAutor.textContent = livro.autor;
+        tr.appendChild(tdAutor);
+
+        // Quantidade Estoque
+        const tdEstoque = document.createElement('td');
+        tdEstoque.textContent = livro.quantidade_atual;
+        tr.appendChild(tdEstoque);
+
+        // Editar
+        const tdEditar = document.createElement('td');
+        tdEditar.classList.add('edit-icon');
+
+        const linkEditar = document.createElement('a');
+        linkEditar.href = `editar.html?id=${livro.id_livro}`;
+        linkEditar.textContent = '✏️';
+
+        // adiciona o link dentro do <td>
+        tdEditar.appendChild(linkEditar);
+
+        // adiciona o <td> na linha <tr>
+        tr.appendChild(tdEditar);
+
+        // Excluir
+        const tdDelete = document.createElement('td');
+        tdDelete.classList.add('delete-icon');
+
+        const btnDelete = document.createElement('button');
+        btnDelete.textContent = '🗑️';
+
+        // Evento de clique para deletar o livro
+        btnDelete.addEventListener('click', () => {
+            if(confirm(`Deseja realmente excluir o livro ${livro.nome}?`)) {
+                // Chame aqui sua função de delete, passando o ID do livro
+                deleteAluno(livro.id_livro);
+                alert("livro Deletado com sucesso");
+                location.reload();
+            }
+        });
+
+        tdDelete.appendChild(btnDelete);
+        tr.appendChild(tdDelete);
+
+        tabelaCorpo.appendChild(tr);
+      });
+    }
+    
+    // DELETAR LIVRO
+    async function deleteAluno(id){
+      const bodyData = { id: id };
+      console.log(bodyData);
+      try {
+        const resposta = await fetch('http://localhost/api_livros/livro', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bodyData)
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          console.log(resposta);
+          throw new Error(`HTTP: ${resposta.status} - ${dados.message}`);
+        }
+
+        return dados;
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    // FILTRO DO Livros
+
+    async function buscarLivroTitulo(titulo) {
+      // monta a query string (usa encodeURIComponent para evitar erro com espaço)
+      const params = new URLSearchParams();
+      if (titulo) params.append("titulo", titulo);
+
+      try {
+        const resposta = await fetch(`http://localhost/api_livros/livroTitulo?${params.toString()}`);
+
+        if (!resposta.ok) {
+          const erroData = await resposta.json();
+          throw new Error(erroData.message || `Erro HTTP: ${resposta.status}`);
+        }
+
+        const artistas = await resposta.json();
+        return artistas;
+
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    async function filtrarLivro() {
+      const msg = document.getElementById('mensagem');
+      const titulo = document.getElementById('filtroTitulo').value;
+
+      if (!titulo) {
+
+        msg.textContent = "Preencha ao menos um campo para filtrar.";
+        msg.style.color = "red";
+        const dados = await buscarDadosTabela(); // espera a Promise resolver
+        console.log(dados);
+        preencherTabela(dados);
+        return;
+      }
+
+      try {
+        const livros = await buscarLivroTitulo(titulo);
+        console.log(livros);
+        preencherTabela(livros);
+        msg.textContent = "";
+      } catch (erro) {
+        console.error("Erro ao buscar livros:", erro);
+        msg.textContent = `Erro: ${erro.message}`;
+        msg.style.color = "red";
+      }
+    }
+
+    // Associa o evento ao botão após o DOM carregar
+    document.addEventListener("DOMContentLoaded", async () => {
+      const dados = await buscarDadosTabela(); // espera a Promise resolver
+      preencherTabela(dados);
+      document.getElementById('filtrar').addEventListener('click', filtrarLivro);
+    });
+  </script>
+
+</body>
+</html>

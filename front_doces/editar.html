@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Atualizar Livro</title>
+</head>
+<body>
+  <h1>Atualizar Livro</h1>
+
+  <a href="listaLivros.html">Lista Livros</a>
+
+  <form id="formLivro">
+    
+    <label>
+      id:
+      <input type="number" id="id" required disabled>
+    </label>
+    <br><br>
+
+    <label>
+      titulo:
+      <input type="text" id="titulo" required>
+    </label>
+    <br><br>
+
+    <label>
+        Autor:
+        <input type="text" id="autor" required>
+    </label>
+    <br><br>
+
+    <label>
+      Descricao
+      <input type="text" id="descricao" required>
+    </label>
+    <br><br>
+    
+    <button type="submit">Atualiza Livro</button>
+  </form>
+
+  <p id="mensagem"></p>
+
+  <script>
+    // buscar usuario inicio
+    async function getLivro(id) {
+      try {
+        const resposta = await fetch(`http://localhost/api_livros/livroId?id=${id}`);
+
+        if (!resposta.ok) {
+          const erroData = await resposta.json();
+          throw new Error(erroData.message || `Erro HTTP: ${resposta.status}`);
+        }
+
+        const artista = await resposta.json();
+        return artista;
+      } catch (erro) {
+        throw erro;
+      }
+    };
+
+    function preencherForm(dados){
+        document.getElementById('id').value = dados.id_livro;
+        document.getElementById('titulo').value = dados.titulo;
+        document.getElementById('autor').value = dados.autor;
+        document.getElementById('descricao').value = dados.descricao;
+    }
+
+    // buscar usuario fim
+
+    // atualizar inicio
+
+    async function enviarForm(){
+        event.preventDefault();
+        const form = document.getElementById('formLivro');
+        const msg = document.getElementById('mensagem');
+
+        const livro = getLivroFormData();
+        console.log(livro);
+
+        try {
+            const resultado = await atualizarLivro(livro);
+            console.log(resultado);
+            location.reload(); // atualizar a pagina
+        } catch (erro) {
+            console.error("Erro ao atualizar autor:", erro);
+            msg.textContent = `Erro ao atualizar autor. - ${erro}`;
+            msg.style.color = "red";
+        }
+    }
+
+    function getLivroFormData() {
+        return {
+            id: document.getElementById('id').value,
+            titulo: document.getElementById('titulo').value,
+            autor: document.getElementById('autor').value,
+            descricao: document.getElementById('descricao').value
+        };
+    }
+
+    async function atualizarLivro(livro){
+        console.log(livro);
+        try {
+            const resposta = await fetch('http://localhost/api_livros/livro', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+                body: JSON.stringify(livro)
+            });
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                console.log(resposta);
+                throw new Error(`HTTP: ${resposta.status} - ${dados.message}`);
+            }
+
+            return dados;
+      } catch (erro) {
+            throw erro;
+      }
+    }
+
+
+    // atualiza fim
+    document.addEventListener("DOMContentLoaded", async () => {
+        // toda vez que a tela é carregada buscar os dados do usuário e preencher a tela
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+        const dados = await getLivro(id); // espera a Promise resolver
+        preencherForm(dados);
+
+        // acao do botao para atualizar
+        document.getElementById('formLivro').addEventListener('submit', enviarForm);
+    });
+  </script>
+</body>
+</html>

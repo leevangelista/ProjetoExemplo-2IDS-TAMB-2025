@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar</title>
+</head>
+<body>
+
+  <div class="container">
+      <h1>Cadastrar</h1>
+  </div>
+    <form id="FormCadastrar">
+        <input type="text" placeholder="Titulo" required id="titulo">
+        <br><br>
+        <input type="text" placeholder="autor" required id="autor">
+        <br><br>
+        <input type="text" placeholder="Descricao" required id="descricao">
+        <br><br>
+        <p id="mensagem"></p>
+        <br><br>
+        <button type="submit">Cadastrar</button>
+    </form>
+    <a href="listaLivros.html"><button>Lista Livros</button></a>
+
+  <script>
+
+    // Função para coletar os dados do formulário
+    function getFormData() {
+      return {
+        titulo: document.getElementById('titulo').value,
+        autor: document.getElementById('autor').value,
+        descricao: document.getElementById('descricao').value
+      };
+    }
+
+    // Função para salvar artista na API
+    async function postCadastro(livro) {
+      try {
+        const resposta = await fetch('http://localhost/api_livros/livro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(livro)
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          console.log(resposta);
+          throw new Error(`HTTP: ${resposta.status} - ${dados.message}`);
+        }
+
+        return dados;
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    // Função para lidar com o submit do formulário
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      const form = document.getElementById('FormLogin');
+      const msg = document.getElementById('mensagem');
+
+      const livro = getFormData();
+      console.log(livro);
+
+      try {
+        const resultado = await postCadastro(livro);
+        console.log(resultado);
+        msg.textContent = "Livros cadastrada com sucesso!";
+        msg.style.color = "green";
+      } catch (erro) {
+        console.error("Erro Login inválido:", erro);
+        msg.textContent = `Erro no Login. - ${erro}`;
+        msg.style.color = "red";
+      }
+    }
+
+    // Associa o evento ao formulário
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('FormCadastrar').addEventListener('submit', handleFormSubmit);
+    });
+  </script>
+</body>
+</html>

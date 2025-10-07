@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Doces</title>
+</head>
+<body>
+    <h1>Faça o Login</h1>
+    <form id="FormLogin">
+        <div class="form-container">
+            <input type="text" placeholder="E-mail" id="email">
+            <br><br>
+            <input type="password" placeholder="Senha" id="senha">
+            <br><br>
+            <button type="submit">Entrar</button>
+            <p id="mensagem"></p>
+        </div>
+    </form>
+  <script>
+
+    // Função para coletar os dados do formulário
+    function getFormData() {
+      return {
+        email: document.getElementById('email').value,
+        senha: document.getElementById('senha').value
+      };
+    }
+
+    // Função para salvar artista na API
+    async function Login(user) {
+      try {
+        const resposta = await fetch('http://localhost/api_livros/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(user)
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          console.log(resposta);
+          throw new Error(`HTTP: ${resposta.status} - ${dados.message}`);
+        }
+
+        return dados;
+      } catch (erro) {
+        throw erro;
+      }
+    }
+
+    // Função para lidar com o submit do formulário
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      const form = document.getElementById('FormLogin');
+      const msg = document.getElementById('mensagem');
+
+      const user = getFormData();
+      console.log(user);
+
+      try {
+        const resultado = await Login(user);
+        console.log(resultado);
+        if(resultado){
+            sessionStorage.setItem('usuario', JSON.stringify(resultado));
+            window.location.href = "principal.html";
+        }else{
+            msg.textContent = `Login ou Senha incorreto.`;
+            msg.style.color = "red";
+        }
+      } catch (erro) {
+        console.error("Erro Login inválido:", erro);
+        msg.textContent = `Erro no Login. - ${erro}`;
+        msg.style.color = "red";
+      }
+    }
+
+    // Associa o evento ao formulário
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById('FormLogin').addEventListener('submit', handleFormSubmit);
+    });
+  </script>
+
+</body>
+</html>
